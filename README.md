@@ -6,6 +6,7 @@ A Lua-based adaptation of [moll/vim-bbye](https://github.com/moll/vim-bbye) with
 
 The default configuration is just an empty table; all options are `nil`. Below is an example of how **buffexit.nvim** could be set up with the default configuration using the **Lazy.nvim** package manager.
 
+**Lazy.nvim**
 ```lua
 return {
     "N8WM/buffexit.nvim",
