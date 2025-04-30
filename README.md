@@ -4,20 +4,25 @@ A Lua-based adaptation of [moll/vim-bbye](https://github.com/moll/vim-bbye) with
 
 ## Configuration
 
-The default configuration is just an empty table; all options are `nil`.
+The default configuration is just an empty table; all options are `nil`. Below is an example of how **buffexit.nvim** could be set up with the default configuration using the **Lazy.nvim** package manager.
 
 ```lua
-require("buffexit").config({
-    -- Whether to avoid opening NetRW when Neovim is opened on a dir
-    hijack_netrw = nil,
-    -- Function that is run when NetRW is bipassed
-    post_hijack_fn = nil,
-
-    -- Function that is run before creating placeholder
-    pre_placeholder_fn = nil,
-    -- Function that is run after creating placeholder
-    post_placeholder_fn = nil,
-})
+return {
+    "N8WM/buffexit.nvim",
+    config = function()
+        require("buffexit").setup({
+            -- Whether to avoid opening NetRW when Neovim is opened on a dir
+            hijack_netrw = nil,
+            -- Function that is run when NetRW is bypassed
+            post_hijack_fn = nil,
+    
+            -- Function that is run before creating placeholder
+            pre_placeholder_fn = nil,
+            -- Function that is run after creating placeholder
+            post_placeholder_fn = nil,
+        })
+    end,
+}
 ```
 
 ### NetRW Hijacking
@@ -25,7 +30,7 @@ require("buffexit").config({
 By setting `hijack_netrw = true`, buffexit.nvim silences the `FileExplorer` autocommand event and automatically closes any buffers whose path is a directory, leaving only a placeholder buffer open. Pair this with `post_hijack_fn` to launch your preferred file-explorer plugin (e.g., `neo-tree.nvim`):
 
 ```lua
-require("buffexit").config({
+require("buffexit").setup({
     hijack_netrw = true,
     post_hijack_fn = function()
         vim.cmd("Neotree show")  -- effectively replaces NetRW
@@ -38,7 +43,7 @@ require("buffexit").config({
 Two optional hooks let you run code before and after the placeholder buffer is created.
 
 ```lua
-require("buffexit").config({
+require("buffexit").setup({
     pre_placeholder_fn = function()
         print("Printed before opening placeholder")
         -- Any cleanup or pre-placeholder code can go here
@@ -84,7 +89,7 @@ require("buffexit").bwipeout("foo", false)  -- not forced
 
 ### Vim Commands
 
-You can also invoke these via command-line in Vim/Neovim:
+You can also invoke these via Vim commands:
 
 ```vim
 :Bdelete
