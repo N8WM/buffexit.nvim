@@ -1,0 +1,141 @@
+*buffexit.nvim.txt*            A user-friendly version of bdelete and bwipeout
+
+============================================================================
+A Lua-based adaptation of |moll/vim-bbye| with additional configurable options
+
+Table of Contents                            *buffexit.nvim-table-of-contents*
+
+1. About                                                 |buffexit.nvim-about|
+2. Configuration                                 |buffexit.nvim-configuration|
+  - Default config                              |buffexit.nvim-default-config|
+  - NetRW                                                |buffexit.nvim-netrw|
+  - Hooks                                                |buffexit.nvim-hooks|
+3. Usage                                                 |buffexit.nvim-usage|
+  - API (Lua bindings)                                     |buffexit.nvim-api|
+  - Commands (Through VIM commandline)                |buffexit.nvim-commands|
+
+
+============================================================================
+1. About                                                 *buffexit.nvim-about*
+
+*buffexit.nvim* is a Lua-based adaptation of moll/vim-bbye (see 
+|buffexit.nvim-bbye-link|) with additional configurable options. Use this as a
+drop-in replacement for vim-bbye or any call to builtin |bdelete| or |bwipeout|.
+
+A placeholder buffer automatically opens when a call to |buffexit.bdelete()|
+or |buffexit.bwipeout()| closes or hides the last listed buffer available to
+display in the active window. The behavior of this can be configured through
+the |buffexit.nvim-hooks|.
+
+
+============================================================================
+2. Configuration                                 *buffexit.nvim-configuration*
+
+Default Config                                  *buffexit.nvim-default-config*
+
+The default configuration is just an empty table; all options are `nil`.
+>lua
+    require("buffexit").config({
+        -- Whether to avoid opening NetRW when Neovim is opened on a dir
+        hijack_netrw = nil,
+        -- Function that is run when NetRW is bipassed
+        post_hijack_fn = nil,
+
+        -- Function that is run before creating placeholder
+        pre_placeholder_fn = nil,
+        -- Function that is run after creating placeholder
+        post_placeholder_fn = nil,
+    })
+<
+
+NetRW                                                    *buffexit.nvim-netrw*
+
+By setting `hijack_netrw` to `true`, buffexit.nvim silences the `FileExplorer`
+autocommand event and automatically closes any buffers whose path is a
+directory, resulting in just a placeholder buffer open.
+
+This is often useful when used in conjunction with the `post_hijack_fn` option
+that runs whenever such a directory buffer is closed, as it allows custom
+logic to open a file explorer plugin like `neo-tree.nvim` or `nvim-tree`.
+
+Example of `hijack_netrw` and `post_hijack_fn` ~
+>lua
+    require("buffexit").config({
+        hijack_netrw = true,
+        post_hijack_fn = function()
+            vim.cmd("Neotree show")  -- effectively replaces NetRW
+        end
+    })
+<
+
+Hooks                                                    *buffexit.nvim-hooks*
+
+There are two optional hooks, `pre_placeholder_fn` and `post_placeholder_fn`
+that run before and after a placeholder buffer is opened, respectively.
+
+Example of `pre_placeholder_fn` and `post_placeholder_fn` ~
+>lua
+    require("buffexit").config({
+        pre_placeholder_fn = function()
+            print("Printed before opening placeholder")
+            -- Any cleanup or pre-placeholder code can go here
+        end,
+        post_placeholder_fn = function(bufnr)
+            print("The buffer id of the placeholder buffer is " .. bufnr)
+            -- Any code to configure the placeholder buffer can go here
+        end,
+    })
+<
+
+============================================================================
+3. Usage                                                 *buffexit.nvim-usage*
+
+API (Lua bindings)                                         *buffexit.nvim-api*
+
+Examples of *buffexit.bdelete()* ~
+>lua
+    -- bdelete the current buffer
+    require("buffexit").bdelete()
+
+    -- bdelete a specific buffer (by name or number)
+    require("buffexit").bdelete(14)
+    require("buffexit").bdelete("foo")
+
+    -- optionally force-bdelete a specific buffer (bang: boolean)
+    require("buffexit").bdelete(14, true)  -- forced
+    require("buffexit").bdelete("foo", false)  -- not forced
+<
+Examples of *buffexit.bwipeout()* ~
+>lua
+    -- bwipeout the current buffer
+    require("buffexit").bwipeout()
+
+    -- bwipeout a specific buffer (by name or number)
+    require("buffexit").bwipeout(14)
+    require("buffexit").bwipeout("foo")
+
+    -- optionally force-bwipeout a specific buffer (bang: boolean)
+    require("buffexit").bwipeout(14, true)  -- forced
+    require("buffexit").bwipeout("foo", false)  -- not forced
+<
+
+Commands (Through VIM commandline)                    *buffexit.nvim-commands*
+
+Both |buffexit.bdelete()| and |buffexit.bwipeout()| can be called through VIM
+commands like so:
+>vimscript
+:Bdelete
+:Bdelete 14
+:Bdelete! foo.txt
+:Bwipeout
+:Bwipeout! 14
+:Bwipeout foo.txt
+<
+
+
+============================================================================
+4. Links                                                 *buffexit.nvim-links*
+
+1. *buffexit.nvim-bbye-link*: https://github.com/moll/vim-bbye
+
+vim:tw=78:ts=8:ft=help:norl:
