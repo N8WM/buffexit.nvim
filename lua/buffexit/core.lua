@@ -1,6 +1,7 @@
 local util = require("buffexit.util")
 local state = require("buffexit.state")
 
+--- @class BECore
 local M = {}
 
 --- Create a fresh placeholder buffer
@@ -24,15 +25,18 @@ end
 --- @param action string
 --- @param bang string
 --- @param buffer_name? string | integer
-function M.do_delete(action, bang, buffer_name)
+--- @param callback? fun(bufnr: integer): nil
+function M.do_delete(action, bang, buffer_name, callback)
+    local winvar = state.module .. "_back"
     local bufnr = util.str2bufnr(buffer_name)
+
     if bufnr < 0 then
         return util.report_error("E516: No buffer matches '" .. tostring(buffer_name) .. "'")
     end
 
     -- Remember current window to restore later
     local current_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_var(current_win, "bbye_back", 1)
+    vim.api.nvim_win_set_var(current_win, winvar, 1)
 
     -- Handle modified buffers using Lua API
     if vim.api.nvim_get_option_value("modified", { buf = bufnr }) and bang == "" then
@@ -73,10 +77,10 @@ function M.do_delete(action, bang, buffer_name)
 
     -- Restore original window
     for _, winid in ipairs(vim.api.nvim_list_wins()) do
-        local ok, val = pcall(vim.api.nvim_win_get_var, winid, "bbye_back")
+        local ok, val = pcall(vim.api.nvim_win_get_var, winid, winvar)
         if ok and val == 1 then
             vim.api.nvim_set_current_win(winid)
-            vim.api.nvim_win_del_var(winid, "bbye_back")
+            vim.api.nvim_win_del_var(winid, winvar)
             break
         end
     end
@@ -85,20 +89,33 @@ function M.do_delete(action, bang, buffer_name)
     if vim.fn.buflisted(bufnr) == 1 and bufnr ~= vim.api.nvim_get_current_buf() then
         vim.api.nvim_command(action .. bang .. " " .. bufnr)
     end
+
+    -- Call the callback if it exists
+    if callback then
+        callback(vim.api.nvim_get_current_buf())
+    end
 end
+
+--- @class BEActionOpts
+local default_opts = {
+    bang = false, --- @type nil | boolean  forces deletion of modified
+    cb = nil,  --- @type nil | fun(bufnr: integer): nil  function to run after the action succeeds
+}
 
 --- Programmatic buffer delete
 --- @param buffer? string | integer (optional) buffer name or id
---- @param bang? boolean (optional) forces deletion of modified
-function M.bdelete(buffer, bang)
-    M.do_delete("bdelete", bang and "!" or "", buffer)
+--- @param opts? BEActionOpts (optional) options for bdelete action
+function M.bdelete(buffer, opts)
+    local o = vim.tbl_deep_extend("force", default_opts, opts or {})
+    M.do_delete("bdelete", o.bang and "!" or "", buffer, o.cb)
 end
 
 --- Programmatic buffer wipeout
 --- @param buffer? string | number (optional) buffer name or id
---- @param bang? boolean (optional) forces wipeout of modified
-function M.bwipeout(buffer, bang)
-    M.do_delete("bwipeout", bang and "!" or "", buffer)
+--- @param opts? BEActionOpts (optional) options for bwipeout action
+function M.bwipeout(buffer, opts)
+    local o = vim.tbl_deep_extend("force", default_opts, opts or {})
+    M.do_delete("bwipeout", o.bang and "!" or "", buffer, o.cb)
 end
 
 return M

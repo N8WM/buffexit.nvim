@@ -7,14 +7,12 @@ end
 
 --- Immediately close any directory buffers
 --- @param args vim.api.keyset.create_autocmd.callback_args
---- @param hijack_fn nil | fun(): nil
-function M.remove_dir_buf(args, hijack_fn)
+--- @param state BEState
+--- @param core BECore
+function M.remove_dir_buf(args, state, core)
     local path = vim.fn.expand(args.match)
     if vim.fn.isdirectory(path) == 1 then
-        vim.cmd("Bwipeout " .. args.buf)
-        if hijack_fn then
-            vim.schedule(hijack_fn)
-        end
+        core.bwipeout(args.buf, { cb = state.config.post_hijack_fn })
     end
 end
 

@@ -11,7 +11,8 @@ state.config = {
     hijack_netrw = false, --- @type nil | boolean
 
     --- Function to run after hijacking netrw
-    post_hijack_fn = nil, --- @type nil | fun(): nil
+    --- (new active buffer number as parameter)
+    post_hijack_fn = nil, --- @type nil | fun(bufnr: integer): nil
 
     --- Function to run before creating and opening placeholder buffer
     pre_placeholder_fn = nil, --- @type nil | fun(): nil
@@ -31,11 +32,11 @@ function M.setup(opts)
 
     -- User commands
     vim.api.nvim_create_user_command("Bdelete", function(cmd)
-        core.bdelete(cmd.args, cmd.bang)
+        core.bdelete(cmd.args, { bang = cmd.bang })
     end, { bang = true, nargs = "?", complete = "buffer", desc = "User friendly bdelete" })
 
     vim.api.nvim_create_user_command("Bwipeout", function(cmd)
-        core.bwipeout(cmd.args, cmd.bang)
+        core.bwipeout(cmd.args, { bang = cmd.bang })
     end, { bang = true, nargs = "?", complete = "buffer", desc = "User friendly bwipeout" })
 
     -- Autocommands
@@ -53,7 +54,7 @@ function M.setup(opts)
     vim.api.nvim_create_autocmd("BufEnter", {
         group = grp,
         callback = function(args)
-            util.remove_dir_buf(args, state.config.post_hijack_fn)
+            util.remove_dir_buf(args, state, core)
         end,
     })
 end
