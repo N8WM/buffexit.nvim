@@ -164,7 +164,7 @@ describe("buffexit", function()
         assert.is_true(is_placeholder(bufnr), "Unexpected non-placeholder after closing last buffer")
     end)
 
-    it("can run hooks", function()
+    it("can run placeholder hooks", function()
         local ref = { pre = false, post = 0 }
 
         be.setup({
@@ -184,5 +184,29 @@ describe("buffexit", function()
             ref.post,
             "Unexpected failure to call post_placeholder_fn, or wrong arg value"
         )
+    end)
+
+    it("can run action hooks", function()
+        local buf_val = nil
+
+        --- @param bufnr integer
+        local cb = function(bufnr)
+            buf_val = bufnr
+        end
+
+        be.setup()
+
+        local new_buf_1 = vim.api.nvim_create_buf(true, true)
+        local new_buf_2 = vim.api.nvim_create_buf(true, true)
+        local new_buf_3 = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_set_current_buf(new_buf_1)
+        vim.api.nvim_set_current_buf(new_buf_2)
+        vim.api.nvim_set_current_buf(new_buf_3)
+
+        be.bdelete(new_buf_1, { cb = cb })
+        assert.are_equal(new_buf_3, buf_val, "Unexpected callback parameter value after closing inactive buffer")
+
+        be.bdelete(new_buf_3, { cb = cb })
+        assert.are_equal(new_buf_2, buf_val, "Unexpected callback parameter value after closing active buffer")
     end)
 end)

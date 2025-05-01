@@ -22,8 +22,8 @@ function M.create_placeholder()
 end
 
 --- Core delete logic
---- @param action string
---- @param bang string
+--- @param action "bdelete" | "bwipeout"
+--- @param bang boolean
 --- @param buffer_name? string | integer
 --- @param callback? fun(bufnr: integer): nil
 function M.do_delete(action, bang, buffer_name, callback)
@@ -39,7 +39,7 @@ function M.do_delete(action, bang, buffer_name, callback)
     vim.api.nvim_win_set_var(current_win, winvar, 1)
 
     -- Handle modified buffers using Lua API
-    if vim.api.nvim_get_option_value("modified", { buf = bufnr }) and bang == "" then
+    if vim.api.nvim_get_option_value("modified", { buf = bufnr }) and not bang then
         return util.report_error("E89: No write since last change for buffer " .. bufnr)
     elseif vim.api.nvim_get_option_value("modified", { buf = bufnr }) then
         vim.fn.setbufvar(bufnr, "&bufhidden", "hide")
@@ -53,9 +53,21 @@ function M.do_delete(action, bang, buffer_name, callback)
             -- Try alternate (#) or previous
             local alt = vim.fn.bufnr("#")
             if alt > 0 and vim.fn.buflisted(alt) == 1 then
-                vim.api.nvim_command("buffer #")
+                vim.api.nvim_set_current_buf(alt)
             else
-                pcall(vim.api.nvim_command, "bprevious")
+                local buflist = vim.fn.getbufinfo({ buflisted = 1 })
+                table.sort(buflist, function(a, b) return a.bufnr < b.bufnr end)
+
+                local idx = 0
+                for i, b in ipairs(buflist) do
+                    if b.bufnr == bufnr then
+                        idx = i
+                        break
+                    end
+                end
+
+                local bprev = idx < 1 and -1 or buflist[idx > 1 and (idx - 1) or #buflist].bufnr
+                pcall(vim.api.nvim_set_current_buf, bprev)
             end
 
             -- If still the same buffer, call placeholder
@@ -87,7 +99,7 @@ function M.do_delete(action, bang, buffer_name, callback)
 
     -- Finally delete or wipe
     if vim.fn.buflisted(bufnr) == 1 and bufnr ~= vim.api.nvim_get_current_buf() then
-        vim.api.nvim_command(action .. bang .. " " .. bufnr)
+        vim.api.nvim_command(action .. (bang and "!" or "") .. " " .. bufnr)
     end
 
     -- Call the callback if it exists
@@ -107,7 +119,7 @@ local default_opts = {
 --- @param opts? BEActionOpts (optional) options for bdelete action
 function M.bdelete(buffer, opts)
     local o = vim.tbl_deep_extend("force", default_opts, opts or {})
-    M.do_delete("bdelete", o.bang and "!" or "", buffer, o.cb)
+    M.do_delete("bdelete", o.bang, buffer, o.cb)
 end
 
 --- Programmatic buffer wipeout
@@ -115,7 +127,7 @@ end
 --- @param opts? BEActionOpts (optional) options for bwipeout action
 function M.bwipeout(buffer, opts)
     local o = vim.tbl_deep_extend("force", default_opts, opts or {})
-    M.do_delete("bwipeout", o.bang and "!" or "", buffer, o.cb)
+    M.do_delete("bwipeout", o.bang, buffer, o.cb)
 end
 
 return M
