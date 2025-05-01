@@ -12,13 +12,16 @@ return {
     "N8WM/buffexit.nvim",
     config = function()
         require("buffexit").setup({
-            -- Whether to avoid opening NetRW when Neovim is opened on a dir
+            -- `hijack_netrw` - boolean
+            -- Whether to avoid opening NetRW when nvim run with a dir
             hijack_netrw = nil,
-            -- Function that is run when NetRW is bypassed
+            -- `post_hijack_fn` - fun(bufnr: integer): nil
+            -- Function that is run when NetRW is bipassed
             post_hijack_fn = nil,
-    
+            -- `pre_placeholder_fn` - fun(): nil
             -- Function that is run before creating placeholder
             pre_placeholder_fn = nil,
+            -- `post_placeholder_fn` - fun(bufnr: integer): nil
             -- Function that is run after creating placeholder
             post_placeholder_fn = nil,
         })
@@ -70,9 +73,20 @@ require("buffexit").bdelete()
 require("buffexit").bdelete(14)
 require("buffexit").bdelete("foo")
 
--- optionally force-delete a buffer (bang: boolean)
-require("buffexit").bdelete(14, true)    -- forced
-require("buffexit").bdelete("foo", false)  -- not forced
+-- optionally force-bdelete a specific buffer
+-- { bang = <boolean> }
+require("buffexit").bdelete(14, { bang = true })  -- forced
+require("buffexit").bdelete("foo", { bang = false })  -- not forced
+
+-- optionally run callback after bdelete succeeds
+-- { cb = <fun(bufnr: integer): nil> }
+
+-- The following snippet deletes current buffer & prints name of new one
+require("buffexit").bdelete({
+    cb = function(bufnr)
+        print("Current buffer: " .. vim.api.nvim_buf_get_name(bufnr))
+    end,
+})
 ```
 
 ```lua
@@ -83,9 +97,19 @@ require("buffexit").bwipeout()
 require("buffexit").bwipeout(14)
 require("buffexit").bwipeout("foo")
 
--- optionally force-wipeout a buffer (bang: boolean)
-require("buffexit").bwipeout(14, true)    -- forced
-require("buffexit").bwipeout("foo", false)  -- not forced
+-- optionally force-bwipeout a specific buffer (bang: boolean)
+require("buffexit").bwipeout(14, { bang = true })  -- forced
+require("buffexit").bwipeout("foo", { bang = false })  -- not forced
+
+-- optionally run callback after bwipeout succeeds
+-- { cb = <fun(bufnr: integer): nil> }
+
+-- The following snippet wipes current buffer & prints name of new one
+require("buffexit").bwipeout({
+    cb = function(bufnr)
+        print("Current buffer: " .. vim.api.nvim_buf_get_name(bufnr))
+    end,
+})
 ```
 
 ### Vim Commands
